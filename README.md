@@ -3,6 +3,16 @@ Djangotransifex
 
 This app can help you push/pull *project level* translations into Transifex.
 
+Installation
+============
+Add the app to your installed apps:
+
+```
+INSTALLED_APPS += (
+    'djangotransifex',
+)
+```
+
 Settings
 ========
 You must set the following in your settings file
@@ -23,22 +33,31 @@ The following are optional settings
     
     # The source language for your strings.
     # default: The Django LANGUAGE_CODE setting
-    SOURCE_LANGUAGE_CODE
+    TRANSIFEX_SOURCE_LANGUAGE
     
     # What prefix to give the resources
     # default: No prefix
-    RESOURCE_PREFIX
+    TRANSIFEX_RESOURCE_PREFIX
     
     # The slug for the project
     # default: `MyProject`
-    PROJECT_SLUG
+    TRANSIFEX_PROJECT_SLUG
     
     # A set of key/value mappings, where the key is the
     # Transifex language code, and the value is the
     # Django language code
     # default: No mappings
-    LANGUAGE_MAPPING
+    # example: {'pt_PT', 'pt'}
+    TRANSIFEX_LANGUAGE_MAPPING
 
+Commands
+========
+Djangotransifex is a Django management command. Run `tx` with the help flag
+to see a list of available sub-commands and their parameters.
+
+```
+./manage.py tx -h
+```
 
 CHANGELOG
 =========
@@ -49,7 +68,7 @@ CHANGELOG
 
 0.1.9
 -----
-Fix pypi version
+* Fix pypi version
 
 0.1.8
 -----
