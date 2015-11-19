@@ -15,7 +15,7 @@ if TRANSIFEX_PASSWORD is None:
     ))
 
 
-TRANSIFEX_HOST = getattr(settings, 'TRANSIFEX_HOST', 'https://www.transifex.net/')
+TRANSIFEX_HOST = getattr(settings, 'TRANSIFEX_HOST', 'https://www.transifex.com/')
 SOURCE_LANGUAGE_CODE = getattr(settings, 'TRANSIFEX_SOURCE_LANGUAGE', settings.LANGUAGE_CODE)
 RESOURCE_PREFIX = getattr(settings, 'TRANSIFEX_RESOURCE_PREFIX', '')
 PROJECT_SLUG = getattr(settings, 'TRANSIFEX_PROJECT_SLUG', 'MyProject')
