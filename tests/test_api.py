@@ -1,10 +1,12 @@
-from unittest import TestCase
-from mock import patch, MagicMock, Mock
-from djangotransifex.api import DjangoTransifexAPI
-from django.utils.unittest.case import skip
-from djangotransifex.exceptions import NoPoFilesFound, LanguageCodeNotAllowed,\
-    ProjectNotFound, ResourceNotFound
 import json
+
+from mock import patch, MagicMock, Mock
+from unittest import TestCase
+
+from djangotransifex.api import DjangoTransifexAPI
+from djangotransifex.exceptions import (NoPoFilesFound, LanguageCodeNotAllowed,
+                                        ProjectNotFound, ResourceNotFound)
+
 
 class _BaseDjangoTransifexAPITest(TestCase):
 
@@ -21,7 +23,8 @@ class _BaseDjangoTransifexAPITest(TestCase):
         if content:
             response.content = json.dumps(content)
         return response
-        
+
+
 class DjangoTransifexAPITest(_BaseDjangoTransifexAPITest):
     
     def setUp(self):
@@ -67,7 +70,33 @@ class DjangoTransifexAPITest(_BaseDjangoTransifexAPITest):
         self.api.upload_source_translations(project_slug='aaa')
         
         self.assertEqual(self.mock_requests_put.call_count, 3)
-        
+
+    def test_upload_source_translations_locale_path_default(self):
+        """
+        Ensure that `upload_source_translations` uses the default locale path.
+        """
+        self.mock_glob.return_value = []
+
+        try:
+            self.api.upload_source_translations(project_slug='aaa')
+        except:
+            pass
+
+        self.mock_glob.assert_called_with('./locale/en-gb/LC_MESSAGES/*.po')
+
+    def test_upload_source_translations_locale_path_specified(self):
+        """
+        Ensure that `upload_source_translations` uses the specified locale path.
+        """
+        self.mock_glob.return_value = []
+
+        try:
+            self.api.upload_source_translations(project_slug='aaa', locale_path='/foo/bar/locale')
+        except:
+            pass
+
+        self.mock_glob.assert_called_with('/foo/bar/locale/en-gb/LC_MESSAGES/*.po')
+
     def test_upload_source_translations_no_files_found(self):
         """
         Ensure that `upload_source_translations` works when there are no 
@@ -119,8 +148,33 @@ class DjangoTransifexAPITest(_BaseDjangoTransifexAPITest):
         self.api.upload_translations(project_slug='aaa', language_code='it')
         
         self.assertTrue(mock_new_translation.called)
-        
-    
+
+    def test_upload_translations_locale_path_default(self):
+        """
+        Ensure that `upload_translations` uses the default locale path.
+        """
+        self.mock_glob.return_value = []
+
+        try:
+            self.api.upload_translations(project_slug='aaa', language_code='it')
+        except:
+            pass
+
+        self.mock_glob.assert_called_with('./locale/it/LC_MESSAGES/*.po')
+
+    def test_upload_translations_locale_path_specified(self):
+        """
+        Ensure that `upload_translations` uses the specified locale path.
+        """
+        self.mock_glob.return_value = []
+
+        try:
+            self.api.upload_translations(project_slug='aaa', language_code='it', locale_path='/foo/bar/locale')
+        except:
+            pass
+
+        self.mock_glob.assert_called_with('/foo/bar/locale/it/LC_MESSAGES/*.po')
+
     def test_upload_translations_bad_language_code(self):
         """
         Ensure that the `upload_translations` function works when a bad language
@@ -200,22 +254,46 @@ class DjangoTransifexAPIPullTranslationsTest(_BaseDjangoTransifexAPITest):
     def tearDown(self):
         for patcher in self.patchers.values():
             patcher.stop()
-        
-            
-    def test_pull_translations(self):
-        """
-        Ensure that the `pull_translations` function works
-        """
+
+    def _setup_pull_translation(self):
         self.mock_list_resources.return_value = [
             {'slug': 'abc'}, {'slug': 'def'}
         ]
         self.mock_list_languages.return_value = ['en_GB', 'it']
         self.mock_exists.return_value = True
-        
+
+    def test_pull_locale_path_default(self):
+        """
+        Ensure that `pull_translations` locale path is default when not specified.
+        :return:
+        """
+        self._setup_pull_translation()
+
         self.api.pull_translations(project_slug='abc', source_language='en-gb')
-        
+
+        self.mock_get_translation.assert_called_with('abc', 'def', 'it', './locale/it/LC_MESSAGES/def.po')
+
+    def test_pull_locale_path_specified(self):
+        """
+        Ensure that `pull_translations` uses specified locale path.
+        :return:
+        """
+        self._setup_pull_translation()
+
+        self.api.pull_translations(project_slug='abc', source_language='en-gb', locale_path='/foo/bar/locale')
+
+        self.mock_get_translation.assert_called_with('abc', 'def', 'it', '/foo/bar/locale/it/LC_MESSAGES/def.po')
+
+    def test_pull_translations(self):
+        """
+        Ensure that the `pull_translations` function works
+        """
+        self._setup_pull_translation()
+
+        self.api.pull_translations(project_slug='abc', source_language='en-gb')
+
         self.assertEqual(self.mock_get_translation.call_count, 4)
-    
+
     def test_pull_translations_no_project(self):
         """
         Ensure that the `pull_translations` function works when Transifex 
@@ -261,5 +339,3 @@ class DjangoTransifexAPIPullTranslationsTest(_BaseDjangoTransifexAPITest):
         self.assertEqual(self.mock_get_translation.call_count, 1)
         saved_pofile_path = self.mock_get_translation.call_args[0][3] 
         self.assertTrue(saved_pofile_path.endswith('it/LC_MESSAGES/abc.po'))
-    
-    

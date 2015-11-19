@@ -21,12 +21,11 @@ def pytest_configure():
             'djangotransifex',
             'tests',
         ),
-        TRANSIFEX_USERNAME = 'abcde',
-        TRANSIFEX_PASSWORD = 'abcde',
-        TRANSIFEX_LANGUAGE_MAPPING = {'en_GB': 'en-gb', 'it_IT': 'it'},
-        LANGUAGE_CODE = 'en-gb',
-        LANGUAGES = (('en-gb', 'English'), ('it', 'Italian')),
-        TRANSIFEX_PROJECT_PATH = '.'
+        LANGUAGE_CODE='en-gb',
+        LANGUAGES=(('en-gb', 'English'), ('it', 'Italian')),
+        TRANSIFEX_USERNAME='abcde',
+        TRANSIFEX_PASSWORD='abcde',
+        TRANSIFEX_LANGUAGE_MAPPING={'en_GB': 'en-gb', 'it_IT': 'it'},
     )
 
     try:
