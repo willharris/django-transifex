@@ -1,26 +1,49 @@
 """
-txpush.py
-
-Push source translations to transifex.
+Transifex integration management command.
 """
-
-from django.core.management.base import NoArgsCommand, BaseCommand, CommandError
-from djangotransifex import app_settings
-from djangotransifex.api import DjangoTransifexAPI
+import inspect
 import random
 import sys
+
+from optparse import make_option
 from textwrap import dedent
-import inspect
+
+from django.core.management.base import BaseCommand, CommandError
+from djangotransifex import app_settings
+from djangotransifex.api import DjangoTransifexAPI
+
+
+def _choose_word():
+    with open('/usr/share/dict/words') as dict_file:
+        dict_words = dict_file.readlines()
+
+    word = None
+    while word is None:
+        word = random.choice(dict_words).replace('\n', '')
+        if len(word) < 5:
+            word = None
+
+    return word
 
 
 class Command(BaseCommand):
-    ## Settings ##
+    # Settings
     project_slug = app_settings.PROJECT_SLUG
     resource_prefix = app_settings.RESOURCE_PREFIX
     source_language = app_settings.SOURCE_LANGUAGE_CODE
     username = app_settings.TRANSIFEX_USERNAME
     password = app_settings.TRANSIFEX_PASSWORD
     host = app_settings.TRANSIFEX_HOST
+
+    option_list = BaseCommand.option_list + (
+        make_option(
+            '-l',
+            '--localepath',
+            action='store',
+            dest='locale_path',
+            default='',
+            help='Path to use for locale manipulation commands'),
+    )
 
     @property
     def help(self):
@@ -41,13 +64,13 @@ class Command(BaseCommand):
             ]
             for method_name in transifex_methods:
                 reduced_method_name = method_name.replace('transifex_', '')
-                help_string += ' * %s\n' % (reduced_method_name)
+                help_string += ' * %s\n' % reduced_method_name
 
                 # Check for a docstring
                 method = getattr(self, method_name)
                 doc = inspect.getdoc(method)
                 for line in doc.split('\n'):
-                    help_string += '    %s\n' % (line)
+                    help_string += '    %s\n' % line
 
             self.__help = help_string
         return help_string
@@ -67,9 +90,9 @@ class Command(BaseCommand):
         if len(args) == 0:
             raise CommandError('You must give the name of an action to perform')
         command = args[0]
-        command_func = getattr(self, 'transifex_%s' % (command), None)
+        command_func = getattr(self, 'transifex_%s' % command, None)
         if command_func is None:
-            raise CommandError('Unknown command %r' % (command))
+            raise CommandError('Unknown command %r' % command)
 
         print('Executing {0} on project {1}'.format(command, self.project_slug))
         command_func(*args[1:], **options)
@@ -92,7 +115,9 @@ class Command(BaseCommand):
         Upload the source translation to Transifex.
         """
         self.confirm_command(app_settings.SOURCE_LANGUAGE_CODE)
-        self.api.upload_source_translations(project_slug=self.project_slug)
+        self.api.upload_source_translations(
+            project_slug=self.project_slug, locale_path=options['locale_path']
+        )
 
     def transifex_upload_translations(self, *args, **options):
         """
@@ -106,23 +131,12 @@ class Command(BaseCommand):
         self.confirm_command(language_code)
 
         self.api.upload_translations(
-            project_slug=self.project_slug, language_code=language_code
+            project_slug=self.project_slug, language_code=language_code,
+            locale_path=options['locale_path']
         )
 
-    def _choose_word(self):
-        with open('/usr/share/dict/words') as dict_file:
-            dict_words = dict_file.readlines()
-
-        word = None
-        while word is None:
-            word = random.choice(dict_words).replace('\n', '')
-            if len(word) < 5:
-                word = None
-
-        return word
-
     def confirm_command(self, language_code):
-        safety_word = self._choose_word()
+        safety_word = _choose_word()
 
         print((
             'This command will delete the existing "{0}" translations in the '
@@ -145,7 +159,7 @@ class Command(BaseCommand):
             print('No upload performed.')
             sys.exit(1)
 
-    def transifex_pull_translations(self, *args, **kwargs):
+    def transifex_pull_translations(self, *args, **options):
         """
         Usage: ./manage.py tx pull_translations [options]
         Pull all translations from the Transifex server to the local machine.
@@ -156,17 +170,18 @@ class Command(BaseCommand):
             .format(self.project_slug, self.source_language)
         )
         self.api.pull_translations(
-            project_slug=self.project_slug, source_language=self.source_language
+            project_slug=self.project_slug, source_language=self.source_language,
+            locale_path=options['locale_path']
         )
         print('Translations pulled')
 
-    def transifex_ping(self, *args, **kwargs):
+    def transifex_ping(self, *args, **options):
         """
         Ping the server to verify connection details and auth details
         """
         print(self.api.ping())
 
-    def transifex_create_project(self, *args, **kwargs):
+    def transifex_create_project(self, *args, **options):
         """
         Usage: ./manage.py tx create_project
         Create the project on Transifex.

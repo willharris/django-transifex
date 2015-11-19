@@ -8,9 +8,10 @@ from djangotransifex.exceptions import LanguageCodeNotAllowed, NoPoFilesFound, \
     ProjectNotFound, ResourceNotFound
 from django.conf import settings
 
+
 class DjangoTransifexAPI(TransifexAPI):
     
-    def upload_source_translations(self, project_slug):
+    def upload_source_translations(self, project_slug, locale_path=None):
         """
         Uploads the current translations as a new source translations. 
         
@@ -19,14 +20,14 @@ class DjangoTransifexAPI(TransifexAPI):
         
         @param project_slug
             the project slug
+        @param locale_path
+            the root path to the locale files
             
         @return 
         """
-
-
         source_folder = os.path.join(
-             app_settings.PROJECT_PATH, 'locale',
-             app_settings.SOURCE_LANGUAGE_CODE, 'LC_MESSAGES'
+            locale_path or app_settings.LOCALE_PATH,
+            app_settings.SOURCE_LANGUAGE_CODE, 'LC_MESSAGES'
         )
         files = [filepath for filepath in glob.glob(source_folder + '/*.po')]
         if len(files) == 0:
@@ -64,7 +65,7 @@ class DjangoTransifexAPI(TransifexAPI):
                     # Unknown exception
                     raise
                 
-    def upload_translations(self, project_slug, language_code):
+    def upload_translations(self, project_slug, language_code, locale_path=None):
         """
         Uploads the current translations for the given language to Transifex. 
         
@@ -76,7 +77,9 @@ class DjangoTransifexAPI(TransifexAPI):
         @param language_code
             The language code to upload. This should be the language code used
             in the Django project, not the code used on Transifex.
-            
+        @param locale_path
+            the root path to the locale files
+
         @return 
             None
             
@@ -95,7 +98,8 @@ class DjangoTransifexAPI(TransifexAPI):
             raise LanguageCodeNotAllowed(language_code)
         
         folder = os.path.join(
-             app_settings.PROJECT_PATH, 'locale', language_code, 'LC_MESSAGES'
+            locale_path or app_settings.LOCALE_PATH,
+            language_code, 'LC_MESSAGES'
         )
         files = [filepath for filepath in glob.glob(folder + '/*.po')]
         if len(files) == 0:
@@ -131,7 +135,7 @@ class DjangoTransifexAPI(TransifexAPI):
                     # Unknown exception
                     raise
                 
-    def pull_translations(self, project_slug, source_language):
+    def pull_translations(self, project_slug, source_language, locale_path=None):
         """
         Pull all translations from the remote Transifex server to the local
         machine, creating the folders where needed
@@ -141,7 +145,9 @@ class DjangoTransifexAPI(TransifexAPI):
         @param source_language
             The source language code.
             This should be the *Transifex* language code 
-        
+        @param locale_path
+            the root path to the locale files
+
         @return None
         
         @raises ProjectNotFound
@@ -167,8 +173,8 @@ class DjangoTransifexAPI(TransifexAPI):
                     transifex_language_code
                 )
                 pofile_dir = os.path.join(
-                    app_settings.PROJECT_PATH, 'locale', local_language_code,
-                    'LC_MESSAGES'
+                    locale_path or app_settings.LOCALE_PATH,
+                    local_language_code, 'LC_MESSAGES'
                 )
                 if not os.path.exists(pofile_dir):
                     os.makedirs(pofile_dir)

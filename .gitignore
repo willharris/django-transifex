@@ -1,5 +1,7 @@
 dist/
 djangotransifex.egg-info/
 
+*.pyc
+
 # PyCharm editor files
 .idea
